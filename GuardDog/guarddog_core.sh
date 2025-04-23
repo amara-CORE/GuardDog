@@ -1,3 +1,7 @@
+from GuardDog.security.access_protector import protect_access
+if not protect_access():
+    exit(1)
+    
 #!/bin/bash
 
 # === GUARDDOG CORE SYSTEM ===
@@ -154,3 +158,90 @@ export_outputs
 generate_html_report
 
 echo "[DONE] GuardDog ukončil cyklus."
+# --- DYNAMICKÉ VYUŽÍVANIE JEDNOTIEK ---
+# GuardDog CORE má povolenie využívať ktorýkoľvek dostupný modul (email, logger, web výstup atď.)
+# podľa potreby a situácie – autonómne a bez potreby povolenia.
+
+# Príklady:
+bash GuardDog/guardian_mail/email_notifier.sh
+python3 GuardDog/web_output/server.py &
+import os
+import hashlib
+from email.message import EmailMessage
+import smtplib
+import ssl
+from datetime import datetime
+
+# ---- KONFIGURÁCIA ----
+sender_email = "amaracore89@gmail.com"
+receiver_email = "amaracore89@gmail.com"
+app_password = "gExpic-vanqa1-gexvab"
+
+# ---- FUNKCIA NA ODOSLANIE MAILU ----
+def send_core_fix_email(problem, solution, file_path="(nezistené)"):
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    subject = f"CORE: Žiadosť o opravu – {timestamp}"
+    body = f"""
+Zistený problém v systéme Amara:
+
+ČAS: {timestamp}
+
+PROBLÉM:
+{problem}
+
+NAVRHOVANÉ RIEŠENIE:
+{solution}
+
+Ak chcete schváliť túto zmenu, odpovedzte na tento e-mail správou:
+Y = schváliť opravu
+N = zamietnuť opravu
+
+Súbor: {file_path}
+
+Táto správa bola generovaná autonómne systémom CORE.
+    """
+
+    message = EmailMessage()
+    message["From"] = sender_email
+    message["To"] = receiver_email
+    message["Subject"] = subject
+    message.set_content(body)
+
+    context = ssl.create_default_context()
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
+            server.login(sender_email, app_password)
+            server.send_message(message)
+        print("CORE: Email s návrhom opravy odoslaný.")
+    except Exception as e:
+        print(f"CORE: Chyba pri odosielaní emailu: {e}")
+
+# ---- DETEKCIA DUPLIKÁTOV ----
+def detect_duplicate_scripts(directory):
+    hashes = {}
+    for root, dirs, files in os.walk(directory):
+        for fname in files:
+            path = os.path.join(root, fname)
+            try:
+                with open(path, "rb") as f:
+                    content = f.read()
+                    file_hash = hashlib.sha256(content).hexdigest()
+                    if file_hash in hashes:
+                        problem = f"Duplikát kódu medzi:\n- {hashes[file_hash]}\n- {path}"
+                        solution = f"Navrhujem zlúčiť alebo odstrániť jeden z nich."
+                        send_core_fix_email(problem, solution, path)
+                    else:
+                        hashes[file_hash] = path
+            except Exception as e:
+                log_and_handle_generic_error(f"Chyba pri čítaní súboru {path}: {e}")
+
+# ---- ZÁKLADNÁ DETEKCIA CHÝB ----
+def log_and_handle_generic_error(error_message):
+    solution = "Navrhujem samostatnú diagnostiku alebo reštart problémového modulu."
+    send_core_fix_email(problem=error_message, solution=solution)
+
+# ---- VOLANIE MODULOV ----
+detect_duplicate_scripts("Amara")
+
+# Príklad generickej chyby:
+# log_and_handle_generic_error("Výstup jednotky 'blog_ai' sa nedal spracovať (neplatný formát).")

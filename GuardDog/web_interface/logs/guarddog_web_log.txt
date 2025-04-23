@@ -1,0 +1,6 @@
+from GuardDog.security.access_protector import protect_access
+if not protect_access():
+    exit(1)
+
+[2025-04-23 16:20:09] Rozhodnutie: start
+[2025-04-23 16:20:26] Rozhodnutie: start
