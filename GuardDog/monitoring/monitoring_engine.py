@@ -1,6 +1,5 @@
 from GuardDog.security.access_protector import protect_access
-if not protect_access():
-    exit(1)
+protect_access()
 
 import os
 import time
